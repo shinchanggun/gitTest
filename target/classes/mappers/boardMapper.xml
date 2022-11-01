@@ -11,11 +11,39 @@ values(mp_board_seq.nextval,#{title},#{content},#{writer})
 </insert>
 
 <!-- 게시판 목록 출력  -->
-<select id="list" resultType="kr.co.vo.BoardVO">
+<select id="listPage" resultType="kr.co.vo.BoardVO"
+parameterType="kr.co.vo.Criteria">
 select bno,title,writer,regdate 
+from (select bno,title,content,writer,regdate,
+row_number() over(order by bno desc) as rnum
 from mp_board
+where 1=1
+<include refid="search"></include>
+) mp
+where rnum between #{rowStart} and #{rowEnd}
 order by bno desc
 </select>
+
+<select id="listCount" resultType="int" parameterType="kr.co.vo.SearchCriteria">
+SELECT COUNT(BNO)
+FROM MP_BOARD
+WHERE 1=1
+<include refid="search"></include>
+AND BNO > 0
+</select>
+
+<sql id="search">
+<if test="searchType != null">
+<if test="searchType == 't'.toString()">AND TITLE LIKE
+'%' || #{keyword} || '%'</if>
+<if test="searchType == 'c'.toString()">AND CONTENT LIKE
+'%' || #{keyword} || '%'</if>
+<if test="searchType == 'w'.toString()">AND WRITER LIKE
+'%' || #{keyword} || '%'</if>
+<if test="searchType == 'tc'.toString()">AND (TITLE LIKE
+'%' || #{keyword} || '%') or (CONTENT LIKE '%' || #{keyword} || '%')</if>
+</if>
+</sql>
 
 <select id="read" parameterType="int" resultType="kr.co.vo.BoardVO">
 select bno,title,content,writer,regdate
